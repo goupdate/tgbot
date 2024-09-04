@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 
 	"github.com/go-telegram/bot"
 )
@@ -17,6 +18,9 @@ type Bot struct {
 
 	OnMsg      OnTextMessage
 	OnBtnClick OnButton
+
+	onlineUsers   map[int64]*User //chatid => user
+	onlineUsers_m sync.Mutex
 }
 
 type User struct {
@@ -30,7 +34,11 @@ type OnButton func(chatId int64, user *User, name string)
 func New(token string) (*Bot, error) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
-	thisBot := &Bot{ctx: ctx, ctxcancel: cancel}
+	thisBot := &Bot{
+		ctx:         ctx,
+		ctxcancel:   cancel,
+		onlineUsers: make(map[int64]*User),
+	}
 
 	//on text message
 	defaultOnTextMessage := func(chatId int64, user *User, text string) {
