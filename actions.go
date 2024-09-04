@@ -2,38 +2,53 @@ package tgbot
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
 
+// send to all clients
+func (b *Bot) Broadcast(text string) {
+	for cid, _ := range b.onlineUsers {
+		b.SendMessage(cid, text)
+	}
+}
+
 func (b *Bot) SendMessage(chatId int64, text string) {
-	b.b.SendMessage(b.ctx, &bot.SendMessageParams{
+	_, err := b.b.SendMessage(b.ctx, &bot.SendMessageParams{
 		ChatID: chatId,
 		Text:   text,
 	})
+	if err != nil {
+		b.onlineUsers_m.Lock()
+		_, ok := b.onlineUsers[chatId]
+		if ok {
+			delete(b.onlineUsers, chatId)
+		}
+		b.onlineUsers_m.Unlock()
+	}
 }
 
 type InlineKeyboardButton = models.InlineKeyboardButton
 
 func (b *Bot) SendMessageWithButtons(chatId int64, text string, kb [][]InlineKeyboardButton) {
 	inlinekb := &models.InlineKeyboardMarkup{
-		InlineKeyboard: [][]models.InlineKeyboardButton{
-			{
-				{Text: "Button 1", CallbackData: "button_1"},
-				{Text: "Button 2", CallbackData: "button_2"},
-			}, {
-				{Text: "Button 3", CallbackData: "button_3"},
-			},
-		},
+		InlineKeyboard: kb,
 	}
 
-	b.b.SendMessage(b.ctx, &bot.SendMessageParams{
+	_, err := b.b.SendMessage(b.ctx, &bot.SendMessageParams{
 		ChatID:      chatId,
 		Text:        text,
 		ReplyMarkup: inlinekb,
 	})
+	if err != nil {
+		b.onlineUsers_m.Lock()
+		_, ok := b.onlineUsers[chatId]
+		if ok {
+			delete(b.onlineUsers, chatId)
+		}
+		b.onlineUsers_m.Unlock()
+	}
 }
 
 func (b *Bot) SendPictureByUrl(chatId int64, name, url string) {
@@ -51,7 +66,12 @@ func (b *Bot) SendPictureByUrl(chatId int64, name, url string) {
 
 	_, err := b.b.SendMediaGroup(b.ctx, params)
 	if err != nil {
-		fmt.Printf("err: %s\n", err.Error())
+		b.onlineUsers_m.Lock()
+		_, ok := b.onlineUsers[chatId]
+		if ok {
+			delete(b.onlineUsers, chatId)
+		}
+		b.onlineUsers_m.Unlock()
 	}
 }
 
@@ -71,6 +91,11 @@ func (b *Bot) SendPicture(chatId int64, name string, body []byte) {
 
 	_, err := b.b.SendMediaGroup(b.ctx, params)
 	if err != nil {
-		fmt.Printf("err: %s\n", err.Error())
+		b.onlineUsers_m.Lock()
+		_, ok := b.onlineUsers[chatId]
+		if ok {
+			delete(b.onlineUsers, chatId)
+		}
+		b.onlineUsers_m.Unlock()
 	}
 }

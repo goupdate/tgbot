@@ -34,19 +34,20 @@ func main() {
 		case "/buttons":
 			kb := [][]tgbot.InlineKeyboardButton{
 				{
-					{Text: "Button 1", CallbackData: "button_1"},
-					{Text: "Button 2", CallbackData: "button_2"},
+					{Text: "Button A", CallbackData: "button_A"},
+					{Text: "Button B", CallbackData: "button_B"},
 				}, {
-					{Text: "Button 3", CallbackData: "button_3"},
+					{Text: "Button C", CallbackData: "button_C"},
 				},
 			}
 			b.SendMessageWithButtons(chatId, "button message", kb)
-
 		case "/pic_by_link":
 			b.SendPictureByUrl(chatId, "weblink.png", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT9sKiPVlcEz6FB2JPT36drHd1XKqiYmChoZw&s")
 		case "/pic_by_body":
 			testpng, _ := images.ReadFile("test.png")
 			b.SendPicture(chatId, "localfile.png", testpng)
+		case "/broadcast":
+			b.Broadcast("this message is broadcasted")
 		default:
 			b.SendMessage(chatId, fmt.Sprintf("got message %s from %s(%d)", text, user.Nick, user.Id))
 		}
@@ -60,6 +61,10 @@ func main() {
 		{
 			Command:     "buttons",
 			Description: "Show buttons",
+		},
+		{
+			Command:     "broadcast",
+			Description: "Broadcast message",
 		},
 		{
 			Command:     "some",
